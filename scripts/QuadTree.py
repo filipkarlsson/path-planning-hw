@@ -2,6 +2,9 @@ import png
 import numpy
 import math
 import Queue
+import rospy
+
+from Tkinter import *
 
 MIN_SIZE = 20
 
@@ -68,7 +71,7 @@ class QuadTree:
             self.neighbors = dict()
 
             # For dijkstra's
-            self.dist = float('inf')  # math.inf
+            self.dist = float('inf')  # math.inf in python3
             self.prev = None
 
         else:
@@ -120,7 +123,7 @@ class QuadTree:
         return None
 
     def get_neighbors(self):
-        # Loop aroud perimitter of cell. Use minimum cell size as step size
+        # Loop aroud perimitter of cell.
         neighbors = dict()
 
         for x in range(self.x, self.x + self.w):
@@ -163,26 +166,21 @@ class QuadTree:
         if self.se != None:
             self.se.connectCells()
 
-    def draw(self, map):
+    def draw(self, canvas):
         if self.nw == None:
-            for i in range(self.x, self.x + self.w):
-                map[self.y][i] = 0
-                map[self.y + self.h][i] = 0
-
-            for j in range(self.y, self.y + self.h):
-                map[j][self.x + self.w] = 0
-                map[j][self.x] = 0
-
-            if not self.free:
-                for i in range(self.x, self.x + self.w):
-                    for j in range(self.y, self.y + self.h):
-                        map[j][i] = 0
+            # Then this is a leaf
+            if self.free:
+                canvas.create_rectangle(
+                    self.x, self.y, self.x + self.w, self.y + self.h)
+            else:
+                canvas.create_rectangle(
+                    self.x, self.y, self.x + self.w, self.y + self.h, fill="#000")
 
         else:
-            self.nw.draw(map)
-            self.ne.draw(map)
-            self.sw.draw(map)
-            self.se.draw(map)
+            self.nw.draw(canvas)
+            self.ne.draw(canvas)
+            self.sw.draw(canvas)
+            self.se.draw(canvas)
 
     def add_to_queue(self, queue):
         if self.free:
@@ -207,9 +205,6 @@ def dijkstras(start_x, start_y, goal_x, goal_y, quad_tree):
     start_node = quad_tree.get_leaf_at(start_x, start_y)
     goal_node = quad_tree.get_leaf_at(goal_x, goal_y)
 
-    print(start_node.center_point())
-    print(goal_node.center_point())
-
     start_node.dist = 0  # inf from constructor
 
     # add all cells to Q
@@ -223,7 +218,7 @@ def dijkstras(start_x, start_y, goal_x, goal_y, quad_tree):
             if alternetive < neighbor.dist:
                 neighbor.dist = alternetive
                 neighbor.prev = cell
-                # add to queue
+                # add to prio queue
                 Q.put(neighbor)
 
     path = []
@@ -237,4 +232,5 @@ def dijkstras(start_x, start_y, goal_x, goal_y, quad_tree):
             node = node.prev
 
     path.reverse()
+
     return path
