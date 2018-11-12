@@ -15,7 +15,7 @@ from Tkinter import *
 #   if yes -> add to graph
 
 ROBOT_SIZE = 3.0
-RADIUS = 30
+RADIUS = 50
 
 
 class Node:
@@ -34,34 +34,6 @@ class RRT:
         self.map_w = map_w
         self.map_h = map_h
         self.pixels = pixels
-
-    def nearest_neighbor_in_radius(self, x, y, radius):
-        min_dist = float('Inf')
-        closest = None
-        for node in self.nodes:
-            dist = distance(x, y, node.x, node.y)
-            if dist < min_dist:
-                min_dist = dist
-                closest = node
-
-        if min_dist > radius:
-            return None
-        return closest
-
-    def add_random_node(self):
-        x = randint(math.ceil(ROBOT_SIZE / 2),
-                    math.ceil(self.map_w - ROBOT_SIZE / 2))
-        y = randint(math.ceil(ROBOT_SIZE / 2),
-                    math.ceil(self.map_h - ROBOT_SIZE / 2))
-
-        if not helpers.free_space(int(math.ceil(x - ROBOT_SIZE)), int(math.ceil(y - ROBOT_SIZE)), int(round(ROBOT_SIZE)), int(round(ROBOT_SIZE)), self.pixels, self.map_w):
-            return False
-
-        closest = self.nearest_neighbor_in_radius(x, y, RADIUS)
-        if closest == None:
-            return False
-
-        self.nodes.append(Node(x, y, closest))
 
     def reachable(self, x1, y1, x2, y2, w):
         dx = x2 - x1
@@ -98,14 +70,50 @@ class RRT:
 
         return True
 
-        def draw(self):
-            master = Tk()
-            canvas = Canvas(master, width=self.map_w, height=self.map_h)
-            canvas.pack()
-            canvas.create_rectangle(0, 0, self.map_w, self.map_h)
+    def nearest_neighbor_in_radius(self, x, y, radius):
+        min_dist = float('Inf')
+        closest = None
+        for node in self.nodes:
+            dist = distance(x, y, node.x, node.y)
+            if dist < min_dist:
+                min_dist = dist
+                closest = node
 
-            for node in self.nodes:
-                pass
+        if min_dist > radius:
+            return None
+
+        if self.reachable(x, y, closest.x, closest.y, ROBOT_SIZE)
+            return closest
+        return None
+
+    def add_random_node(self):
+        x = randint(math.ceil(ROBOT_SIZE / 2),
+                    math.ceil(self.map_w - ROBOT_SIZE / 2))
+        y = randint(math.ceil(ROBOT_SIZE / 2),
+                    math.ceil(self.map_h - ROBOT_SIZE / 2))
+
+        if not helpers.free_space(int(math.ceil(x - ROBOT_SIZE)), int(math.ceil(y - ROBOT_SIZE)), int(round(ROBOT_SIZE)), int(round(ROBOT_SIZE)), self.pixels, self.map_w):
+            return False
+
+        closest = self.nearest_neighbor_in_radius(x, y, RADIUS)
+        if closest == None:
+            return False
+
+        self.nodes.append(Node(x, y, closest))
+        return True
+
+    def draw(self):
+        master = Tk()
+        canvas = Canvas(master, width=self.map_w, height=self.map_h)
+        canvas.pack()
+        canvas.create_rectangle(0, 0, self.map_w, self.map_h)
+        master.update()
+
+        for node in self.nodes:
+            if node.prev != None:
+                canvas.create_line(node.x, node.y, node.prev.x, node.prev.y)
+
+        mainloop()
 
 
 def distance(x1, y1, x2, y2):
@@ -117,7 +125,13 @@ if __name__ == '__main__':
     r = png.Reader(
         filename=world_map)
     w, h, pixels, metadata = r.read_flat()
-    rrt = RRT(0, 0, 10, -5, pixels, w, h)
+    rrt = RRT(100, 200, 400, 400, pixels, w, h)
 
-    for i in range(10):
-        rrt.add_random_node()
+    nr = 0
+    for i in range(10000):
+        if rrt.add_random_node():
+            nr += 1
+
+    print nr
+
+    rrt.draw()
