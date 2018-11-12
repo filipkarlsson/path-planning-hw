@@ -6,40 +6,16 @@ import rospy
 
 from Tkinter import *
 
+import helpers
+
 MIN_SIZE = 20
-
-
-# returns True if there is no pixel in square(x,x+w,y,y+h) with value != 1
-# Pixel_array is 1-D flat array.
-def freeSpace(x, y, w, h, pixel_array, img_width):
-    for v in range(y, y + h):
-        for u in range(x, x + w):
-            if pixel_array[u + v * img_width] == 0:
-                return False
-
-    return True
-
-
-def mixedSpace(x, y, w, h, pixel_array, img_width):
-    free_pixels = filled_pixels = 0
-    for v in range(y, y + h):
-        for u in range(x, x + w):
-            if pixel_array[u + v * img_width] == 0:
-                filled_pixels = filled_pixels + 1
-            else:
-                free_pixels = free_pixels + 1
-
-            if (free_pixels > 0) and (filled_pixels > 0):
-                return True
-
-    return (free_pixels > 0) and (filled_pixels > 0)
 
 
 class QuadTree:
 
     def __init__(self, x, y, w, h, pixels, img_w, root):
 
-        if mixedSpace(x, y, w, h, pixels, img_w) and w >= MIN_SIZE:
+        if helpers.mixed_space(x, y, w, h, pixels, img_w) and w >= MIN_SIZE:
             # print("occupied")
             self.root = self if root == None else root
             self.free = False
@@ -56,7 +32,7 @@ class QuadTree:
                                2, h // 2, pixels, img_w, self.root)
             self.neighbors = None
 
-        elif freeSpace(x, y, w, h, pixels, img_w):
+        elif helpers.free_space(x, y, w, h, pixels, img_w):
             # print("freeSpace found")
             self.root = self if root == None else root
             self.free = True
