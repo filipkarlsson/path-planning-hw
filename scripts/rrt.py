@@ -14,7 +14,7 @@ from Tkinter import *
 # Check if the drawn sample is reachable from nearest node
 #   if yes -> add to graph
 
-ROBOT_SIZE = 3.0
+ROBOT_SIZE = 10
 RADIUS = 50
 
 
@@ -43,29 +43,35 @@ class RRT:
             return True
 
         if dx == 0:
-            for y in range(y1, y2):
-                for x in range(x1 - w, x2 + w, 1):
-                    if not helpers.free_space(x, y, 1, 1, self.pixels, self.map_w):
-                        return False
+            for y in range(min(y1, y2), max(y1, y2)):
+                u = int(round(x1 - ROBOT_SIZE / 2))
+                v = int(round(y - ROBOT_SIZE / 2))
+
+                if not helpers.free_space(u, v, ROBOT_SIZE, ROBOT_SIZE, self.pixels, self.map_w):
+                    return False
 
         elif dy == 0:
-            for x in range(x1, x2):
-                for y in range(y1 - w, y2 + w, 1):
-                    if not helpers.free_space(x, y, 1, 1, self.pixels, self.map_w):
-                        return False
+            for x in range(min(x1, x2), max(x1, x2)):
+                u = int(round(x - ROBOT_SIZE / 2))
+                v = int(round(y1 - ROBOT_SIZE / 2))
+
+                if not helpers.free_space(u, v, ROBOT_SIZE, ROBOT_SIZE, self.pixels, self.map_w):
+                    return False
 
         else:
             dydx = float(dy) / dx
-            dydx_perp = -float(dx) / dy
-            alpha = math.atan(dydx_perp)
-            perp_xrange = range(round(-w * math.cos(alpha)),
-                                round(w * math.cos(alpha)), 1)
+            for i in helpers.frange(min(x1, x2), max(x1, x2), 0.1):
+                y = y1 + (i - x1) * dydx
 
-            for x in range(x1, x2, 1):
-                # Loop perpendicular to the line
-                y = y1 + x * dydx
-                for x_perp in perp_xrange:
-                    if not helpers.free_space(x + x_perp, round(y + x_perp * dydx_perp), 1, 1, self.pixels, self.map_w):
+                u = int(round(i - ROBOT_SIZE / 2))
+                v = int(round(y - ROBOT_SIZE / 2))
+
+                # print(str(u) + " " + str(v))
+
+                if helpers.contains_box(0, 0, self.map_w, self.map_h, u, v, ROBOT_SIZE, ROBOT_SIZE):
+                    if not helpers.free_space(u, v,
+                                              ROBOT_SIZE,  ROBOT_SIZE, self.pixels, self.map_w):
+
                         return False
 
         return True
@@ -82,7 +88,7 @@ class RRT:
         if min_dist > radius:
             return None
 
-        if self.reachable(x, y, closest.x, closest.y, ROBOT_SIZE)
+        if self.reachable(int(x), int(y), int(closest.x), int(closest.y), int(ROBOT_SIZE)):
             return closest
         return None
 
@@ -104,10 +110,20 @@ class RRT:
 
     def draw(self):
         master = Tk()
-        canvas = Canvas(master, width=self.map_w, height=self.map_h)
+        canvas = Canvas(master, width=self.map_w,
+                        height=self.map_h, bg="#fff")
         canvas.pack()
         canvas.create_rectangle(0, 0, self.map_w, self.map_h)
-        master.update()
+
+        img = PhotoImage(width=self.map_w, height=self.map_h)
+        canvas.create_image((self.map_w / 2, self.map_h / 2),
+                            image=img, state="normal")
+
+        for i in range(len(self.pixels)):
+            u = i % self.map_w
+            v = i // self.map_w
+            if not self.pixels[i]:
+                img.put("#000", (u, v))
 
         for node in self.nodes:
             if node.prev != None:
@@ -125,13 +141,19 @@ if __name__ == '__main__':
     r = png.Reader(
         filename=world_map)
     w, h, pixels, metadata = r.read_flat()
+
     rrt = RRT(100, 200, 400, 400, pixels, w, h)
 
     nr = 0
+
+    # print(rrt.reachable(180, 300, 207, 450, ROBOT_SIZE))
+
     for i in range(10000):
         if rrt.add_random_node():
+            if distance(rrt.nodes[-1].x, rrt.nodes[-1].y, rrt.goal.x, rrt.goal.y) < RADIUS:
+                if rrt.reachable(rrt.nodes[-1].x, rrt.nodes[-1].y, rrt.goal.x, rrt.goal.y, w):
+                    break
             nr += 1
-
     print nr
 
     rrt.draw()

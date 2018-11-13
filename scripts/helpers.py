@@ -31,3 +31,20 @@ def frange(start, stop, step):
     while i < stop:
         yield i
         i += step
+
+
+def contains_point(bound_x, bound_y, bound_w, bound_h, x, y):
+    return (x >= bound_x) and (x < bound_x + bound_w) and (y >= bound_y) and (y < bound_y + bound_h)
+
+
+def contains_box(bound_x, bound_y, bound_w, bound_h, x, y, w, h):
+    top_l = (x >= bound_x) and (x < bound_x + bound_w) and (y >=
+                                                            bound_y) and (y < bound_y + bound_h)
+    top_r = (x + w >= bound_x) and (x + w < bound_x +
+                                    bound_w) and (y >= bound_y) and (y < bound_y + bound_h)
+    bottom_l = (x >= bound_x) and (x < bound_x + bound_w) and (y +
+                                                               h >= bound_y) and (y + h < bound_y + bound_h)
+    bottom_r = (x + w >= bound_x) and (x + w < bound_x +
+                                       bound_w) and (y + h >= bound_y) and (y + h < bound_y + bound_h)
+
+    return top_l and top_r and bottom_l and bottom_r
