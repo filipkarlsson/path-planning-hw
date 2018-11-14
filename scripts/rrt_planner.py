@@ -8,12 +8,12 @@ from tf.transformations import euler_from_quaternion
 from Tkinter import *
 
 import sys
-import QuadTree
 import png
 import numpy
 import Queue
 import math
 import helpers
+import rrt
 
 x = 0
 y = 0
@@ -32,25 +32,6 @@ def current_pose_callback(data):
     pose_init = True
 
 
-def draw(quad_tree, w, h, path, x_goal, y_goal):
-    master = Tk()
-    canvas = Canvas(master, width=w, height=h)
-    canvas.pack()
-    canvas.create_rectangle(0, 0, w, h)
-    quad_tree.draw(canvas)
-
-    dot_size = 2
-
-    for node in path:
-        xc, yc = node.center_point()
-        canvas.create_oval(xc - dot_size, yc - dot_size, xc +
-                           dot_size, yc + dot_size, outline="#000", fill="#f00")
-
-    canvas.create_oval(x_goal - dot_size, y_goal - dot_size, x_goal +
-                       dot_size, y_goal + dot_size, outline="#000", fill="#00f")
-    master.update()
-
-
 def navigate(goal_xw, goal_yw, world_w, world_h, world_map):
     #pub = rospy.Publisher('chatter', String, queue_size=10)
     global x
@@ -59,7 +40,7 @@ def navigate(goal_xw, goal_yw, world_w, world_h, world_map):
     global pose_init
 
     # Create ROS node
-    rospy.init_node('quadtree_planner')
+    rospy.init_node('rrt_planner')
 
     # Subscribe to currnet pose
     rospy.Subscriber('base_pose_ground_truth', Odometry, current_pose_callback)
@@ -76,7 +57,7 @@ def navigate(goal_xw, goal_yw, world_w, world_h, world_map):
     w, h, pixels, metadata = r.read_flat()
 
     # Create quadtree
-    quad = QuadTree.QuadTree(0, 0, w, h, pixels, w, None)
+    #quad = QuadTree.QuadTree(0, 0, w, h, pixels, w, None)
 
     # Wait for current pose
     rate = rospy.Rate(10)
@@ -92,7 +73,12 @@ def navigate(goal_xw, goal_yw, world_w, world_h, world_map):
     rospy.loginfo("Trying to find a path from (" + str(x) + "," +
                   str(y) + ") to (" + str(goal_xw) + ", " + str(goal_yw) + ").")
 
-    path = QuadTree.dijkstras(x_start, y_start, x_goal, y_goal, quad)
+    # Create RRT
+    rrt_planner = rrt.RRT(x_start, y_start, x_goal, y_goal, pixels, w, h)
+
+    path = rrt_planner.calculate_path(20000)
+
+    #path = QuadTree.dijkstras(x_start, y_start, x_goal, y_goal, quad)
 
     if path == None:
         rospy.loginfo("No path found.")
@@ -101,10 +87,10 @@ def navigate(goal_xw, goal_yw, world_w, world_h, world_map):
     rospy.loginfo("Path found... Let's go!")
 
     # Render map
-    draw(quad, w, h, path, x_goal, y_goal)
+    rrt_planner.draw()
 
     world_path = helpers.transform_path(path, w, h, world_w, world_h)
-    world_path.append((goal_xw, goal_yw))
+    #world_path.append((goal_xw, goal_yw))
 
     waypoint_idx = 0
 
@@ -139,7 +125,7 @@ def navigate(goal_xw, goal_yw, world_w, world_h, world_map):
 if __name__ == '__main__':
     try:
         if len(sys.argv) < 2:
-            print("usage: rosrun stage_controll quadPlanner.py goal_x goal_y")
+            print("usage: rosrun stage_controll rrt_planner.py goal_x goal_y")
         else:
             navigate(float(sys.argv[1]), float(
                 sys.argv[2]), 54, 58.7, "/home/filip/ROS/CSCI5980/src/bitmaps/autolab.png")

@@ -15,7 +15,7 @@ from Tkinter import *
 #   if yes -> add to graph
 
 ROBOT_SIZE = 10
-RADIUS = 50
+RADIUS = 70
 
 
 class Node:
@@ -23,6 +23,8 @@ class Node:
     def __init__(self, x, y, prev):
         self.x = x
         self.y = y
+        self.h = 0
+        self.w = 0
         self.prev = prev
 
 
@@ -37,7 +39,7 @@ class RRT:
         self.pixels = pixels
         self.path = []
 
-    def reachable(self, x1, y1, x2, y2, w):
+    def reachable(self, x1, y1, x2, y2, robot_size):
         dx = x2 - x1
         dy = y2 - y1
 
@@ -46,18 +48,18 @@ class RRT:
 
         if dx == 0:
             for y in range(min(y1, y2), max(y1, y2)):
-                u = int(round(x1 - ROBOT_SIZE / 2))
-                v = int(round(y - ROBOT_SIZE / 2))
+                u = int(round(x1 - robot_size / 2))
+                v = int(round(y - robot_size / 2))
 
-                if not helpers.free_space(u, v, ROBOT_SIZE, ROBOT_SIZE, self.pixels, self.map_w):
+                if not helpers.free_space(u, v, robot_size, robot_size, self.pixels, self.map_w):
                     return False
 
         elif dy == 0:
             for x in range(min(x1, x2), max(x1, x2)):
-                u = int(round(x - ROBOT_SIZE / 2))
-                v = int(round(y1 - ROBOT_SIZE / 2))
+                u = int(round(x - robot_size / 2))
+                v = int(round(y1 - robot_size / 2))
 
-                if not helpers.free_space(u, v, ROBOT_SIZE, ROBOT_SIZE, self.pixels, self.map_w):
+                if not helpers.free_space(u, v, robot_size, robot_size, self.pixels, self.map_w):
                     return False
 
         else:
@@ -65,14 +67,14 @@ class RRT:
             for i in helpers.frange(min(x1, x2), max(x1, x2), 0.1):
                 y = y1 + (i - x1) * dydx
 
-                u = int(round(i - ROBOT_SIZE / 2))
-                v = int(round(y - ROBOT_SIZE / 2))
+                u = int(round(i - robot_size / 2))
+                v = int(round(y - robot_size / 2))
 
                 # print(str(u) + " " + str(v))
 
-                if helpers.contains_box(0, 0, self.map_w, self.map_h, u, v, ROBOT_SIZE, ROBOT_SIZE):
+                if helpers.contains_box(0, 0, self.map_w, self.map_h, u, v, robot_size, robot_size):
                     if not helpers.free_space(u, v,
-                                              ROBOT_SIZE,  ROBOT_SIZE, self.pixels, self.map_w):
+                                              robot_size,  robot_size, self.pixels, self.map_w):
 
                         return False
 
@@ -157,7 +159,7 @@ class RRT:
         for i in range(iterations):
             if self.add_random_node():
                 if distance(self.nodes[-1].x, self.nodes[-1].y, self.goal.x, self.goal.y) < RADIUS:
-                    if self.reachable(self.nodes[-1].x, self.nodes[-1].y, self.goal.x, self.goal.y, w):
+                    if self.reachable(self.nodes[-1].x, self.nodes[-1].y, self.goal.x, self.goal.y, ROBOT_SIZE):
                         self.goal.prev = self.nodes[-1]
                         self.nodes.append(self.goal)
                         path_found = True
@@ -182,11 +184,13 @@ def distance(x1, y1, x2, y2):
 
 if __name__ == '__main__':
     world_map = "/home/filip/ROS/CSCI5980/src/bitmaps/autolab.png"
+    #world_map = "/home/filip/ROS/CSCI5980/src/bitmaps/cave.png"
+    #world_map = "/home/filip/ROS/CSCI5980/src/bitmaps/hospital_section.png"
     r = png.Reader(
         filename=world_map)
     w, h, pixels, metadata = r.read_flat()
 
-    rrt = RRT(100, 200, 600, 500, pixels, w, h)
+    rrt = RRT(100, 200, 500, 200, pixels, w, h)
 
     rrt.calculate_path(20000)
 
